@@ -1,0 +1,26 @@
+name: Update data.json from Google Drive
+
+on:
+  schedule:
+    - cron: "30 * * * *"   # runs every mins
+  workflow_dispatch:      # allows manual run
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Download data.json from Google Drive
+        run: |
+          curl -L "https://drive.google.com/uc?export=download&id=1bOseoG3VA7xvMg8RaceY5nJ5wnJbennU" -o data.json
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data.json
+          git commit -m "Auto-update data.json" || echo "No changes to commit"
+          git push
