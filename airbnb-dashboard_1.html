@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Booking Manager — Booking Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+:root{
+  --sand:#F4F6F8;--sand-dark:#E2E8EE;--deep:#1C2B3A;--deep2:#2D3F52;
+  --teal:#2A9D8F;--teal-light:#E0F5F3;--amber:#E9C46A;--amber-dark:#C9A227;
+  --coral:#3B82F6;--coral-light:#EBF2FF;--green:#52B788;--green-light:#E8F5EE;
+  --muted:#7A8A96;--white:#FFFFFF;--border:rgba(28,43,58,0.12);--radius:12px;
+}
+body.dark{
+  --sand:#0F1923;--sand-dark:#1A2535;--deep:#E8F0F7;--deep2:#C5D5E8;
+  --teal:#3BBFB0;--teal-light:#0D3330;--amber:#E9C46A;--amber-dark:#F0D080;
+  --coral:#60A5FA;--coral-light:#1A2A3F;--green:#5FCF90;--green-light:#0D2E1E;
+  --muted:#7A9AB5;--white:#1A2535;--border:rgba(255,255,255,0.1);
+}
+body.dark header{background:#0A1520;}
+body.dark nav{background:#1A2535;border-color:rgba(255,255,255,0.08);}
+body.dark .sync-bar{background:#1A2535;border-color:rgba(255,255,255,0.08);}
+body.dark .upload-bar{background:#1A2535;border-color:rgba(255,255,255,0.08);}
+body.dark .file-strip{background:rgba(95,207,144,0.08);}
+body.dark #landing,body.dark #mode-screen{background:#080F18;}
+body.dark .mode-btn{background:rgba(255,255,255,0.04);}
+body.dark .av-checkout{background:#1A2A3F;color:var(--coral);}
+body.dark .av-upcoming{background:#2A3040;color:#90A4AE;}
+body.dark .month-card-rev{color:#60A5FA !important;}
+body.dark .month-card-sub{color:#94A3B8;}
+body.dark .status-tag.upcoming{background:#2A3040;color:#90A4AE;}
+body.dark .booking-card.upcoming{border-left-color:#4A5568;}
+body.dark .status-tag.checkout{background:#1A2A3F;color:var(--coral);}
+body.dark .booking-card.checkout{border-left-color:var(--coral);}
+body.dark .stat-card,body.dark .booking-card,body.dark .key-section,body.dark .table-wrap,body.dark .month-card,body.dark .bar-chart-wrap,body.dark .empty-state{background:#1A2535;border-color:rgba(255,255,255,0.1);}
+body.dark th{background:#0A1520;}
+body.dark tr:hover td{background:#222F40;}
+body.dark td{border-color:#222F40;}
+body.dark .upload-zone{border-color:rgba(255,255,255,0.15);}
+body.dark .upload-zone:hover{background:rgba(42,157,143,0.08);}
+body.dark .no-file h2{color:var(--deep);}
+
+/* Toggle button */
+.dark-toggle{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);padding:6px 12px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;line-height:1;}
+.dark-toggle:hover{border-color:rgba(255,255,255,0.4);color:white;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--sand);color:var(--deep);min-height:100vh;}
+
+/* ── LANDING ── */
+#landing{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--deep);position:relative;overflow:hidden;}
+#landing::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(42,157,143,0.15) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none;}
+#landing::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(233,196,106,0.1) 0%,transparent 70%);bottom:-50px;left:-50px;pointer-events:none;}
+.landing-card{position:relative;z-index:1;width:100%;max-width:500px;text-align:center;}
+.landing-logo{font-family:'DM Sans',sans-serif;font-size:32px;font-weight:600;color:var(--amber);margin-bottom:6px;}
+.landing-tagline{color:rgba(255,255,255,0.4);font-size:14px;margin-bottom:2.5rem;}
+
+/* Step 1 — upload */
+#step-upload{}
+.upload-zone{border:2px dashed rgba(255,255,255,0.15);border-radius:20px;padding:2.5rem 2rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+.upload-zone:hover{border-color:rgba(42,157,143,0.6);background:rgba(42,157,143,0.05);}
+.upload-zone.drag-over{border-color:var(--teal);background:rgba(42,157,143,0.12);transform:scale(1.01);}
+.upload-zone-icon{font-size:44px;margin-bottom:14px;display:block;opacity:0.5;}
+.upload-zone-title{font-size:18px;font-weight:600;color:white;margin-bottom:8px;}
+.upload-zone-desc{font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6;margin-bottom:20px;}
+.upload-zone-cta{display:inline-block;background:var(--teal);color:white;padding:11px 30px;border-radius:10px;font-size:14px;font-weight:600;}
+
+.file-loaded-box{background:rgba(82,183,136,0.12);border:1px solid rgba(82,183,136,0.3);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:20px;}
+.file-loaded-icon{font-size:24px;flex-shrink:0;}
+.file-loaded-info{flex:1;}
+.file-loaded-name{font-size:14px;font-weight:600;color:white;}
+.file-loaded-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px;}
+.file-change-btn{font-size:12px;color:var(--teal);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;text-decoration:underline;white-space:nowrap;}
+
+/* Step 2 — role */
+#step-role{display:none;margin-top:0;}
+.step-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.3);margin-bottom:1.25rem;text-align:center;}
+.role-buttons{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.role-btn{padding:1.75rem 1.5rem;border-radius:18px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;font-family:'DM Sans',sans-serif;color:white;transition:all 0.2s;text-align:left;}
+.role-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.3);transform:translateY(-2px);}
+.role-btn:active{transform:scale(0.98);}
+.role-btn-icon{font-size:26px;margin-bottom:10px;display:block;}
+.role-btn-title{font-size:16px;font-weight:600;margin-bottom:5px;}
+.role-btn-desc{font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;}
+.role-btn.admin{border-top:2px solid var(--amber);}
+.role-btn.caretaker{border-top:2px solid var(--teal);}
+
+/* ── APP ── */
+#app{display:none;min-height:100vh;}
+header{background:var(--deep);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;gap:12px;}
+.header-brand{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:600;color:var(--amber);flex-shrink:0;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.role-badge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:0.06em;}
+.role-badge.admin{background:rgba(233,196,106,0.2);color:var(--amber);}
+.role-badge.caretaker{background:rgba(42,157,143,0.2);color:var(--teal);}
+.hbtn{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.hbtn:hover{border-color:rgba(255,255,255,0.4);color:white;}
+
+/* File info strip */
+.file-strip{background:rgba(82,183,136,0.08);border-bottom:1px solid rgba(82,183,136,0.2);padding:8px 1.5rem;display:flex;align-items:center;gap:10px;}
+.file-strip-name{font-size:13px;color:var(--muted);font-weight:500;flex:1;}
+.file-strip-count{font-size:12px;color:var(--muted);}
+
+nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;overflow-x:auto;}
+.nav-tab{padding:14px 18px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;}
+.nav-tab:hover{color:var(--deep);}
+.nav-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+
+main{padding:1.5rem;max-width:1200px;margin:0 auto;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:600;color:var(--deep);margin-bottom:4px;}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:1.5rem;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-size:26px;font-weight:300;color:var(--deep);line-height:1;}
+.stat-value.green{color:var(--green);}
+.stat-value.amber{color:var(--amber-dark);}
+.stat-value.coral{color:var(--coral);}
+.stat-value.teal{color:var(--teal);}
+.stat-detail{font-size:12px;color:var(--muted);margin-top:5px;}
+
+.section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--deep);margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--border);}
+.booking-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem;}
+.booking-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;}
+.booking-card.checkin{border-left:3px solid var(--teal);}
+.booking-card.checkout{border-left:3px solid var(--coral);}
+.booking-card.staying{border-left:3px solid var(--teal);}
+.booking-card.upcoming{border-left:3px solid #B0BEC5;}
+.booking-avatar{width:58px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;letter-spacing:0.04em;}
+.av-checkin{background:var(--teal-light);color:var(--teal);}
+.av-checkout{background:var(--coral-light);color:var(--coral);}
+.av-staying{background:var(--teal-light);color:var(--teal);}
+.av-upcoming{background:#ECEFF1;color:#78909C;}
+.booking-name{font-weight:600;font-size:17px;color:var(--deep);}
+.booking-meta{font-size:13px;color:var(--muted);margin-top:2px;}
+.booking-right{text-align:right;flex-shrink:0;}
+.booking-amount{font-size:14px;color:var(--green);font-weight:500;}
+.booking-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.status-tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em;margin-left:8px;}
+.status-tag.checkin{background:var(--teal-light);color:var(--teal);}
+.status-tag.staying{background:var(--teal-light);color:var(--teal);}
+.status-tag.checkout{background:var(--coral-light);color:var(--coral);}
+.status-tag.upcoming{background:#ECEFF1;color:#78909C;}
+
+
+.table-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;margin-bottom:1.5rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:580px;}
+th{background:var(--deep);color:rgba(255,255,255,0.7);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--sand);color:var(--deep);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--sand);}
+.td-green{color:var(--green);font-weight:500;}
+.td-amber{color:var(--amber-dark);font-weight:500;}
+.td-coral{color:var(--coral);font-weight:500;}
+.td-muted{color:var(--muted);}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;text-transform:uppercase;}
+.badge-yes{background:var(--green-light);color:var(--green);}
+.badge-no{background:var(--sand-dark);color:var(--muted);}
+
+.month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:1.5rem;}
+.month-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.5rem;}
+.month-card.has-data{border-top:2px solid var(--teal);}
+.month-card-name{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px;}
+.month-card-rev{font-size:22px;font-weight:600;color:var(--deep);}
+.month-card-sub{font-size:13px;color:var(--muted);margin-top:6px;}
+
+
+
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--muted);background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;}
+.empty-state h3{font-size:15px;color:var(--deep);margin-bottom:5px;}
+.empty-state p{font-size:13px;}
+
+/* Horizontal bar chart */
+.hbar-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;}
+.hbar-legend{display:flex;gap:1.5rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.hbar-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+.hbar-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.hbar-row{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;margin-bottom:8px;}
+.hbar-label{font-size:11px;font-weight:700;color:var(--muted);text-align:right;text-transform:uppercase;}
+.hbar-bars{display:flex;flex-direction:column;gap:3px;}
+.hbar-bar-row{display:flex;align-items:center;gap:6px;}
+.hbar-bar-track{flex:1;height:16px;background:var(--sand-dark);border-radius:5px;overflow:hidden;}
+.hbar-bar-fill{height:100%;border-radius:5px;transition:width 0.3s;}
+.hbar-val{font-size:18px;font-weight:700;color:var(--muted);min-width:130px;white-space:nowrap;text-align:right;}
+body.dark .hbar-wrap{background:#1A2535;border-color:rgba(255,255,255,0.1);}
+body.dark .hbar-bar-track{background:#2A3547;}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1.5rem;}
+.cal-header{text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 0;}
+.cal-day{min-height:80px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px;position:relative;cursor:default;}
+.cal-day.other-month{background:var(--sand);opacity:0.5;}
+.cal-day.today-cell{border:2px solid #DC2626;box-shadow:0 0 0 3px rgba(220,38,38,0.15);background:rgba(220,38,38,0.04);}
+.cal-day-num{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+.cal-day.today-cell .cal-day-num{color:#DC2626;font-weight:700;font-size:14px;}
+.cal-booking{font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-booking.checkin{background:var(--teal-light);color:var(--teal);}
+.cal-booking.staying{background:#F0F9FF;color:#0369A1;}
+.cal-booking.checkout{background:#EBF2FF;color:#1D4ED8;}
+body.dark .cal-day{background:#1A2535;border-color:rgba(255,255,255,0.08);}
+body.dark .cal-day.other-month{background:#111B27;}
+body.dark .cal-booking.staying{background:#0C2340;color:#60A5FA;}
+body.dark .cal-day.today-cell{border:2px solid #E9C46A;box-shadow:0 0 0 3px rgba(233,196,106,0.25);background:rgba(233,196,106,0.08);}
+body.dark .cal-day.today-cell .cal-day-num{color:#E9C46A;}
+body.dark .cal-booking.checkout{background:#0C1F3D;color:#93C5FD;}
+
+/* Simulation bar */
+.sim-bar{background:#2D1B69;border-bottom:2px solid #7C3AED;padding:8px 1.5rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.sim-bar-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#A78BFA;}
+.sim-date-input{background:rgba(255,255,255,0.1);border:1px solid rgba(167,139,250,0.4);border-radius:8px;color:white;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;}
+.sim-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:0.6;}
+.sim-reset{background:transparent;border:1px solid rgba(167,139,250,0.4);color:#A78BFA;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.sim-reset:hover{background:rgba(167,139,250,0.15);}
+.sim-badge{font-size:11px;font-weight:600;background:rgba(124,58,237,0.3);color:#C4B5FD;padding:3px 10px;border-radius:20px;}
+
+.day-banner-icon{font-size:26px;flex-shrink:0;}
+.day-banner-title{font-size:16px;font-weight:600;color:var(--deep);margin-bottom:2px;}
+.day-banner-desc{font-size:13px;color:var(--muted);}
+
+@media(max-width:600px){
+  main{padding:1rem;}
+  .booking-card{grid-template-columns:auto 1fr;}
+  .booking-right{display:none;}
+  .role-buttons{grid-template-columns:1fr;}
+}
+
+/* PIN Screen */
+#pin-screen{position:fixed;inset:0;background:#0A1520;z-index:9999;display:flex;align-items:center;justify-content:center;}
+.pin-box{width:100%;max-width:320px;padding:2.5rem 2rem;text-align:center;}
+.pin-logo{font-size:44px;margin-bottom:1rem;}
+.pin-title{font-size:22px;font-weight:600;color:white;margin-bottom:6px;}
+.pin-sub{font-size:14px;color:rgba(255,255,255,0.35);margin-bottom:2rem;}
+.pin-dots{display:flex;justify-content:center;gap:16px;margin-bottom:2rem;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:transparent;transition:all 0.2s;}
+.pin-dot.filled{background:#2A9D8F;border-color:#2A9D8F;}
+.pin-dot.error{background:#DC2626;border-color:#DC2626;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem;}
+.pin-key{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:14px;
+  padding:20px 0;font-size:22px;font-weight:600;color:white;cursor:pointer;transition:all 0.15s;user-select:none;}
+.pin-key:hover{background:rgba(255,255,255,0.13);}
+.pin-key:active{transform:scale(0.93);background:rgba(42,157,143,0.25);}
+.pin-key.del{font-size:18px;color:rgba(255,255,255,0.5);}
+.pin-error{font-size:13px;color:#DC2626;margin-top:10px;min-height:18px;}
+
+
+/* ── MOBILE OPTIMIZATION ── */
+@media (max-width: 600px) {
+  .page{padding:1rem;}
+  header{padding:0 1rem;}
+  .header-left{font-size:16px;}
+  nav{padding:0 1rem;}
+  .nav-tab{font-size:13px;padding:10px 12px;}
+  .booking-card{padding:12px;}
+  .booking-avatar{width:48px;height:36px;font-size:12px;}
+  .booking-name{font-size:15px;}
+  .booking-meta{font-size:12px;}
+  .stat-card{padding:14px;}
+  .stat-value{font-size:22px;}
+  .month-card{padding:1rem;}
+  .hbar-wrap{padding:1rem;}
+  .pin-box{padding:1.5rem 1rem;}
+  .pin-key{padding:16px 0;font-size:20px;}
+  .landing-card{padding:1.5rem 1.25rem;}
+  .role-buttons{flex-direction:column;}
+  .section-label{font-size:11px;}
+  .page-title{font-size:22px;}
+  .file-strip{padding:8px 1rem;}
+  .cal-day{min-height:60px;padding:4px;}
+  .cal-booking{font-size:9px;padding:1px 4px;}
+  .cal-header{font-size:10px;}
+  .bar-chart{gap:8px;}
+  .hbar-bar-row{gap:4px;}
+  .hbar-val{font-size:14px;min-width:90px;}
+}
+</style>
+</head>
+<body>
+
+<div id="pin-screen">
+  <div class="pin-box">
+    <div class="pin-logo">🏠</div>
+    <div class="pin-title">Booking Manager</div>
+    <div class="pin-sub">Enter your PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-grid">
+      <div class="pin-key" onclick="pinKey('1')">1</div>
+      <div class="pin-key" onclick="pinKey('2')">2</div>
+      <div class="pin-key" onclick="pinKey('3')">3</div>
+      <div class="pin-key" onclick="pinKey('4')">4</div>
+      <div class="pin-key" onclick="pinKey('5')">5</div>
+      <div class="pin-key" onclick="pinKey('6')">6</div>
+      <div class="pin-key" onclick="pinKey('7')">7</div>
+      <div class="pin-key" onclick="pinKey('8')">8</div>
+      <div class="pin-key" onclick="pinKey('9')">9</div>
+      <div class="pin-key" style="visibility:hidden"></div>
+      <div class="pin-key" onclick="pinKey('0')">0</div>
+      <div class="pin-key del" onclick="pinDel()">⌫</div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+
+<!-- ── LANDING ── -->
+<div id="landing" style="display:none">
+  <div class="landing-card">
+    <div class="landing-logo">🏠 Booking Manager</div>
+    <div class="landing-tagline">2026 Airbnb Booking Dashboard</div>
+
+    <!-- STEP 1: Upload -->
+    <div id="step-upload" style="display:block">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <span class="upload-zone-icon">📊</span>
+        <div class="upload-zone-title" id="upload-title">Drag your Excel file here</div>
+        <div class="upload-zone-desc">Drop your <strong style="color:rgba(255,255,255,0.7)">2026_airbnb_summary.xlsx</strong> anywhere on this box,<br>or click to browse. Nothing leaves your device.</div>
+        <span class="upload-zone-cta">Browse file</span>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFile(event)">
+    </div>
+
+    <!-- STEP 2: Role (shown after file loads) -->
+    <div id="step-role">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem;">
+
+      </div>
+      <div class="step-label">Now choose your view</div>
+      <div class="role-buttons">
+        <button class="role-btn admin" onclick="enterMode('admin')">
+          <span class="role-btn-icon">🛠️</span>
+          <div class="role-btn-title">Admin</div>
+          <div class="role-btn-desc">Full access — summary, payments & all bookings</div>
+        </button>
+        <button class="role-btn caretaker" onclick="enterMode('caretaker')">
+          <span class="role-btn-icon">🏡</span>
+          <div class="role-btn-title">Caretaker</div>
+          <div class="role-btn-desc">Today, tomorrow, this week & this month</div>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <header>
+    <div class="header-brand">🏠 Booking Manager</div>
+    <div class="header-right">
+      <button class="dark-toggle" id="dark-btn" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+      <!-- <button class="hbtn" onclick="toggleSim()">🔮 Simulate</button> -->
+      <button class="hbtn" onclick="goBack()">← Back</button>
+    </div>
+  </header>
+
+  <div class="file-strip" style="justify-content:space-between;">
+    <span class="role-badge" id="role-badge"></span>
+    <span class="file-strip-count" id="strip-count" style="margin-left:auto"></span>
+  </div>
+  <div class="sim-bar" id="sim-bar" style="display:none!important">
+    <span class="sim-label" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#A78BFA;">🔮 Simulating</span>
+    <input type="date" class="sim-date-input" id="sim-date-input" onchange="setSimDate(this.value)">
+    <button class="sim-reset" onclick="resetSimDate()">Back to today</button>
+    <span class="sim-badge" id="sim-badge"></span>
+  </div>
+
+  <nav id="main-nav"></nav>
+
+  <main>
+    <div class="page" id="page-today">
+      <div class="page-title">Today</div>
+      <div class="page-sub" id="today-sub"></div>
+      <div id="today-no-booking" style="display:none"><div class="empty-state"><h3>No Booking</h3><p>No check-ins, check-outs or staying guests today</p></div></div>
+      <div class="booking-list" id="today-checkins"></div>
+      <div id="today-staying-section">
+        <div class="section-label">Currently Hosting</div>
+        <div class="booking-list" id="today-staying"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-tomorrow">
+      <div class="page-title">Tomorrow</div>
+      <div class="page-sub" id="tomorrow-sub"></div>
+      <div id="tomorrow-no-booking" style="display:none"><div class="empty-state"><h3>No Booking</h3><p>No check-ins, check-outs or staying guests tomorrow</p></div></div>
+      <div class="booking-list" id="tomorrow-checkins"></div>
+      <div id="tomorrow-staying-section">
+        <div class="section-label">Currently Hosting Tomorrow</div>
+        <div class="booking-list" id="tomorrow-staying"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-week">
+      <div class="page-title">This Week</div>
+      <div class="page-sub" id="week-sub"></div>
+      <div class="booking-list" id="week-list"></div>
+    </div>
+
+    <div class="page" id="page-month">
+      <div class="page-title">Upcoming</div>
+      <div class="page-sub" id="month-sub"></div>
+      <div class="booking-list" id="month-list"></div>
+    </div>
+
+    <div class="page" id="page-calendar">
+      <div class="page-title">Calendar</div>
+      <div class="page-sub" id="cal-sub"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">
+        <button class="hbtn" style="color:var(--deep);border-color:var(--border)" onclick="calPrev()">← Prev</button>
+        <span id="cal-month-label" style="font-size:15px;font-weight:600;color:var(--deep);flex:1;text-align:center"></span>
+        <button class="hbtn" style="color:var(--deep);border-color:var(--border)" onclick="calNext()">Next →</button>
+      </div>
+      <div id="cal-grid"></div>
+    </div>
+
+    <div class="page" id="page-summary">
+      <div class="page-title">Snapshot</div>
+      <div class="page-sub">2026 — all months at a glance</div>
+      <div class="stats-grid" id="summary-stats"></div>
+      <div class="section-label" style="margin-top:0.25rem">Monthly performance</div>
+      <div id="hbar-chart"></div>
+
+    </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const ADMIN_TABS=[{id:'today',label:'Today'},{id:'month',label:'Upcoming'},{id:'calendar',label:'Calendar'},{id:'summary',label:'Snapshot'}];
+const CARE_TABS=[{id:'today',label:'Today'},{id:'month',label:'Upcoming'},{id:'calendar',label:'Calendar'}];
+const MONTH_NAMES=['Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026','Oct 2026','Nov 2026','Dec 2026'];
+
+let role='admin', currentPage='today', allRows=[], loadedFileName='', summaryData={};
+
+// ── FILE HANDLING ──
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processFile(file);
+  event.target.value='';
+}
+
+function processFile(file) {
+  loadedFileName = file.name;
+  const lm = file.lastModified ? new Date(file.lastModified) : new Date();
+  window._fileDate = lm.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+' '+lm.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true, raw:false});
+      processWorkbook(wb, file.name);
+    } catch(err) {
+      alert('Error reading file: '+err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function processWorkbook(wb, fileName) {
+    loadedFileName = fileName;
+    try {
+      const parsed = [];
+      let summaryData = {};
+      wb.SheetNames.forEach(sheetName => {
+        // Parse Summary tab for bank balance and earnings
+        console.log('Checking sheet:', sheetName, '| is summary:', sheetName.toLowerCase().includes('summary'));
+        if (sheetName.toLowerCase().includes('summary')) {
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false, header:1});
+          // Row 0 = header row with "Bank Balance", value in col 1
+          // Find current month row (the one with a non-zero/non-dash balance)
+          // Also grab top-level figures
+          if (rows.length > 0) {
+            // Use raw:true to get actual numbers
+            const wsRaw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:0, raw:true, header:1});
+            // C17=JAN net, C18=FEB ... C28=DEC (index 16-27, col 2)
+            // B2=JAN gross, B3=FEB ... B13=DEC (index 1-12, col 1)
+            // E2=JAN total expenses, E3=FEB ... E13=DEC (index 1-12, col 4)
+            const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            summaryData.monthlyNet = {};
+            summaryData.monthlyGross = {};
+            summaryData.monthlyCleaning = {};
+            summaryData.monthlyOtherExp = {};
+            summaryData.monthlyExpenses = {};
+            summaryData.monthlyOccupancy = {};
+            summaryData.monthlyNights = {};
+            const MONTH_ABBR_FULL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            MONTH_ABBR_FULL.forEach((m, i) => {
+              const rowNet = wsRaw[16 + i] || [];
+              const rowTop = wsRaw[1 + i]  || [];
+              summaryData.monthlyNet[m]       = parseMoney(String(rowNet[2]||''));
+              summaryData.monthlyGross[m]     = parseMoney(String(rowTop[1]||''));
+              summaryData.monthlyCleaning[m]  = parseMoney(String(rowTop[2]||''));
+              summaryData.monthlyOtherExp[m]  = parseMoney(String(rowTop[3]||''));
+              summaryData.monthlyExpenses[m]  = parseMoney(String(rowTop[4]||''));
+              summaryData.monthlyNights[m]    = parseInt(String(rowTop[6]||''))||0;
+              const occ = parseFloat(String(rowTop[7]||'').replace(/[%,]/g,''));
+              summaryData.monthlyOccupancy[m] = isNaN(occ) ? 0 : (occ <= 1 ? Math.round(occ*100*100)/100 : Math.round(occ*100)/100);
+            });
+            // Totals row (row 14, index 13)
+            const totRow = wsRaw[13] || [];
+            summaryData.totals = {
+              gross:    parseMoney(String(totRow[1]||'')),
+              cleaning: parseMoney(String(totRow[2]||'')),
+              otherExp: parseMoney(String(totRow[3]||'')),
+              expenses: parseMoney(String(totRow[4]||'')),
+              net:      parseMoney(String(totRow[5]||'')),
+              nights:   parseInt(String(totRow[6]||''))||0,
+              occ:      (() => { const v=parseFloat(String(totRow[7]||'').replace(/[%,]/g,'')); return isNaN(v)?0:(v<=1?Math.round(v*10000)/100:Math.round(v*100)/100); })()
+            };
+            // Row 16 (index 16) = header row of bottom section
+            // Row 17 (index 17) = first data row: D=Monthly Avg (index 3), E=2026 Net Earnings (index 4)
+            // Log rows 13-18 to find exact position of Monthly Avg and Net Earnings
+            for(let ri=13;ri<=19;ri++){
+              const rr=wsRaw[ri]||[];
+              console.log('Row',ri+1,':',JSON.stringify(rr.slice(0,7)));
+            }
+            // Try both index 16 and 17 for row 17
+            const row17a = wsRaw[16] || [];
+            const row17b = wsRaw[17] || [];
+            console.log('row16(idx16):', JSON.stringify(row17a.slice(0,7)));
+            console.log('row17(idx17):', JSON.stringify(row17b.slice(0,7)));
+            summaryData.monthlyAvg  = parseMoney(String(row17b[3]||row17a[3]||''));
+            summaryData.netEarnings = parseMoney(String(row17b[4]||row17a[4]||''));
+            summaryData.totalNet    = parseMoney(String((wsRaw[13]||[])[5]||''));
+            // Bottom section: rows 16-28, B=bank balance, C=net per month
+            // Row 16 (index 16) = header: Bank Balance | Net | Monthly Avg | 2026 Net Earnings
+            // Rows 17-28 (index 17-28) = JAN-DEC bank balances and nets
+            const MONTH_ABBR2 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            let latestBalance = 0, latestNet = 0, latestMonth = '';
+            wsRaw.slice(17, 29).forEach((row, i) => {
+              const label = MONTH_ABBR2[i];
+              const bal = parseMoney(String(row[1]||''));
+              const net = parseMoney(String(row[3]||''));
+              if (bal > 0) { latestBalance = bal; latestNet = net; latestMonth = label; }
+            });
+            summaryData.currentMonthBalance = latestBalance;
+            summaryData.currentMonthNet = latestNet;
+            summaryData.currentMonth = latestMonth ? latestMonth[0]+latestMonth.slice(1).toLowerCase() : '';
+            console.log('Summary parsed:', JSON.stringify({
+              monthlyAvg: summaryData.monthlyAvg,
+              netEarnings: summaryData.netEarnings,
+              totalNet: summaryData.totalNet,
+              currentMonth: summaryData.currentMonth,
+              currentMonthBalance: summaryData.currentMonthBalance,
+              currentMonthNet: summaryData.currentMonthNet,
+              monthlyNet: summaryData.monthlyNet
+            }));
+          }
+          return;
+        }
+        const monthIdx = MONTH_NAMES.findIndex(m =>
+          m.toLowerCase()===sheetName.toLowerCase() ||
+          sheetName.toLowerCase().startsWith(m.split(' ')[0].toLowerCase())
+        );
+        if (monthIdx===-1) return;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:'', raw:false});
+        parsed.push(...parseSheetRows(rows, monthIdx));
+      });
+
+      if (parsed.length===0) {
+        alert('No data found. Make sure your tabs are named "Jan 2026", "Feb 2026", etc.');
+        return;
+      }
+
+      // Sort chronologically so cross-month stays process in order
+      parsed.sort((a,b) => (a.date||0) - (b.date||0));
+
+      // Merge cross-month stays: same base name + no PIN = continuation of previous stay
+      const stayByPin = {};
+      const stayByName = {};
+      parsed.forEach(r => {
+        if (!r.guestName || !r.guestName.trim()) return;
+        const base = r.guestName.split(' - ')[0].split(',')[0].trim().toLowerCase();
+        if (r.isCheckIn && r.pinCode) {
+          stayByPin[r.pinCode] = { checkInDate:r.checkInDate, checkOutDate:r.checkOutDate, totalNights:r.bookedNights, guestName:r.guestName };
+          stayByName[base] = r.pinCode;
+        } else if (r.isCheckIn && !r.pinCode && stayByName[base]) {
+          const pin = stayByName[base];
+          const stay = stayByPin[pin];
+          if (r.checkOutDate && (!stay.checkOutDate || r.checkOutDate > stay.checkOutDate)) stay.checkOutDate = r.checkOutDate;
+          // Recalculate total nights as checkIn to final checkOut
+          stay.totalNights = Math.round((stay.checkOutDate - stay.checkInDate) / (1000*60*60*24));
+          r.isCheckIn = false;
+          r.checkInDate = stay.checkInDate;
+          r.checkOutDate = stay.checkOutDate;
+          r.pinCode = pin;
+          r.bookedNights = stay.totalNights;
+          r.guestName = stay.guestName;
+          parsed.filter(p => p.checkInDate && stay.checkInDate && p.checkInDate.toDateString() === stay.checkInDate.toDateString()).forEach(p => { p.checkOutDate = stay.checkOutDate; p.bookedNights = stay.totalNights; });
+        }
+      });
+
+      window._summaryData = summaryData;
+      allRows = parsed.filter(r => r.guestName && r.guestName.trim() !== '');
+      const checkins = allRows.filter(r=>r.isCheckIn).length;
+      const months = [...new Set(parsed.map(r=>r.monthIdx))].length;
+
+      // Show step 2
+      document.getElementById('step-upload').style.display = 'none';
+      const fnEl = document.getElementById('loaded-filename');
+      const fdEl = document.getElementById('loaded-details');
+      if (fnEl) fnEl.textContent = fileName || loadedFileName;
+      if (fdEl) fdEl.textContent = `${months} month${months!==1?'s':''} · ${checkins} check-ins · ${parsed.length} records`;
+      window._fileDate = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+' '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('step-role').style.display = 'block';
+
+    } catch(err) {
+      console.error('processWorkbook error:', err);
+      alert('Error: ' + err.message + '\n\nLine: ' + (err.stack||'').split('\n')[1]);
+    }
+}
+
+function changeFile() {
+  document.getElementById('step-role').style.display = 'none';
+  document.getElementById('step-upload').style.display = 'block';
+  allRows = [];
+}
+
+function goBack() {
+  document.getElementById('app').style.display = 'none';
+  if (role === 'caretaker') {
+    // Exit — go back to PIN screen
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('pin-screen').style.display = 'flex';
+    pinEntry = ''; updatePinDots();
+    document.getElementById('pin-error').textContent = '';
+  } else {
+    // Admin — go back to role select
+    document.getElementById('landing').style.display = 'flex';
+    document.getElementById('step-upload').style.display = 'none';
+    document.getElementById('step-role').style.display = 'block';
+  }
+}
+
+// ── PARSE SHEET ──
+// Strategy: three-pass.
+// Pass 1 — read raw rows, group into "stays" by detecting PIN code (= new check-in).
+// Pass 2 — for each stay, find bookedNights from ANY row in that block (it may appear on a later row).
+// Pass 3 — emit final rows with correct checkInDate, checkOutDate, isCheckIn, isCheckOut.
+function parseSheetRows(rows, monthIdx) {
+
+  // Normalise a name: strip country suffix after " - " and lowercase for comparison
+  function normName(n) { return (n||'').split(' - ')[0].trim().toLowerCase(); }
+
+  // Pass 1: collect raw data rows
+  const rawRows = [];
+  rows.forEach(row => {
+    const r = {};
+    Object.keys(row).forEach(k => r[k.toLowerCase().trim()] = String(row[k]||'').trim());
+    const date = parseDate(r['date']||'');
+    if (!date) return;
+    rawRows.push({
+      date,
+      day:          r['day']||'',
+      guestName:    r['guest name']||r['guest']||'',
+      pinCode:      r['pin code']||r['pin']||'',
+      booked:       parseInt(r['booked'])||0,
+      numGuests:    parseFloat(r['no. of guests']||r['no of guests']||r['guests'])||1,
+      hostPayout:   parseMoney(r['host payout']||r['payout']||''),
+      processed:    r['processed']||'',
+      cleaningFee:  parseMoney(r['cleaning fees']||r['cleaning fee']||r['cleaning']||''),
+      payments:     parseMoney(r['payments']||r['payment']||''),
+      comment:      r['comment']||'',
+      monthIdx,
+    });
+  });
+
+  if (!rawRows.length) return [];
+
+  // Pass 2: group rows into stays.
+  // A new stay starts when: pinCode is present OR guestName changes significantly.
+  const stays = [];
+  let currentStay = null;
+
+  rawRows.forEach(row => {
+    const norm = normName(row.guestName);
+    const currentNorm = currentStay ? normName(currentStay.rows[0].guestName) : '';
+    // New stay = has PIN code only
+    // No PIN = continuation (name variations like "Erica Reyes - USA" vs "Erica Reyes" treated as same stay)
+    const curNorm = currentStay ? normName(currentStay.rows.find(r=>r.guestName)?.guestName||'') : '';
+    const rowNorm = normName(row.guestName);
+    const isNewStay = row.pinCode
+      ? true
+      : (!currentStay && !!row.guestName);
+
+    if (isNewStay || !currentStay) {
+      currentStay = { rows: [], pinCode: row.pinCode, checkInDate: row.date, bookedNights: 0 };
+      stays.push(currentStay);
+    }
+    if (row.pinCode) currentStay.pinCode = row.pinCode;
+    // If row has a guest name and current stay has none yet, adopt it
+    if (row.guestName && !currentStay.rows.length) currentStay.guestName = row.guestName;
+    // bookedNights: take the max value seen across all rows in the stay
+    if (row.booked > currentStay.bookedNights) currentStay.bookedNights = row.booked;
+    if (!row.guestName) row.guestName = currentStay.rows[0]?.guestName || '';
+    currentStay.rows.push(row);
+  });
+
+  // Pass 3: compute checkOutDate per stay and emit result rows
+  const result = [];
+  stays.forEach(stay => {
+    const ciDate = stay.checkInDate;
+    let coDate = null;
+    if (ciDate && stay.bookedNights > 0) {
+      coDate = new Date(ciDate);
+      coDate.setDate(ciDate.getDate() + stay.bookedNights);
+      coDate.setHours(0,0,0,0);
+    }
+
+    stay.rows.forEach((row, idx) => {
+      result.push({
+        date:         row.date,
+        day:          row.day,
+        monthIdx:     row.monthIdx,
+        guestName:    stay.rows.find(r=>r.guestName)?.guestName || row.guestName || '',
+        pinCode:      stay.pinCode,
+        isCheckIn:    idx === 0,
+        isCheckOut:   coDate ? sameDay(row.date, coDate) : false,
+        checkInDate:  ciDate,
+        checkOutDate: coDate,
+        bookedNights: stay.bookedNights,
+        numGuests:    row.numGuests,
+        hostPayout:   row.hostPayout,
+        processed:    row.processed,
+        cleaningFee:  row.cleaningFee,
+        payments:     row.payments,
+        comment:      row.comment,
+      });
+    });
+  });
+
+  return result;
+}
+
+function parseDate(str) {
+  if (!str||str==='undefined') return null;
+  str = str.trim();
+  if (!str) return null;
+  if (str instanceof Date) { const d=new Date(str); d.setHours(0,0,0,0); return d; }
+  const m1 = str.match(/^(\d{1,2})[-\/\s]([A-Za-z]+)[-\/\s](\d{2,4})$/);
+  if (m1) { const yr=m1[3].length===2?'20'+m1[3]:m1[3]; const d=new Date(`${m1[2]} ${m1[1]} ${yr}`); if(!isNaN(d)){d.setHours(0,0,0,0);return d;} }
+  const m2 = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m2) { const yr=m2[3].length===2?'20'+m2[3]:m2[3]; const d=new Date(`${yr}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}`); if(!isNaN(d)){d.setHours(0,0,0,0);return d;} }
+  const d=new Date(str); if(!isNaN(d)){d.setHours(0,0,0,0);return d;}
+  return null;
+}
+
+function parseMoney(str) {
+  if (!str) return 0;
+  return parseFloat(String(str).replace(/[₱$,\s]/g,'').replace(/[()]/g,''))||0;
+}
+
+function fmtGuests(n) {
+  if (!n) return '';
+  const num = parseFloat(String(n).replace(/[,]/g,''));
+  if (isNaN(num)) return String(n)+' guest'+(String(n)!=='1'?'s':'');
+  const adults = Math.floor(num);
+  const infants = Math.round((num - adults) * 10);
+  let str = adults + ' guest' + (adults !== 1 ? 's' : '');
+  if (infants > 0) str += ' · ' + infants + ' infant' + (infants !== 1 ? 's' : '');
+  return str;
+}
+
+function sameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+
+// ── MODE / NAV ──
+// Data loaded after PIN verification
+
+function enterMode(r) {
+  role = r;
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('role-badge').textContent = r==='admin'?'Admin':'';
+  document.getElementById('role-badge').className = 'role-badge '+r;
+  document.getElementById('role-badge').style.display = r==='admin'?'':'none';
+  // Change Back button label based on role
+  const backBtn = document.querySelector('button[onclick="goBack()"]');
+  if (backBtn) backBtn.textContent = r==='caretaker' ? '✕ Exit' : '← Back';
+  document.getElementById('strip-count').textContent = window._fileDate ? 'Last updated: '+window._fileDate : '';
+  const ghLink = document.getElementById('github-update-link');
+  if (ghLink) ghLink.style.display = r === 'admin' ? 'flex' : 'none';
+  document.querySelectorAll('.admin-col').forEach(el=>el.style.display=r==='admin'?'':'none');
+  const tabs = r==='admin'?ADMIN_TABS:CARE_TABS;
+  document.getElementById('main-nav').innerHTML = tabs.map(t=>
+    `<button class="nav-tab" onclick="showPage('${t.id}')">${t.label}</button>`
+  ).join('');
+  showPage('today');
+}
+
+function showPage(id) {
+  if(id==='calendar'){ calYear=tod0().getFullYear(); calMonth=tod0().getMonth(); }
+  currentPage=id;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>
+    t.classList.toggle('active',t.getAttribute('onclick')===`showPage('${id}')`)
+  );
+  renderPage(id);
+}
+
+// ── HELPERS ──
+function fmt(d){return d?d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'—';}
+function fmtP(n){return n?'₱'+Number(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function initials(n){return(n||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+// ── PIN ──
+const ADMIN_PIN = '7270';
+const CARE_PIN  = '2404';
+let pinEntry = '';
+let pinReady = false;
+setTimeout(() => { pinReady = true; }, 500); // prevent autofill
+
+function pinKey(k) {
+  if (!pinReady || pinEntry.length >= 4) return;
+  pinEntry += k;
+  updatePinDots();
+  if (pinEntry.length === 4) setTimeout(checkPin, 150);
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots(state) {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('d'+i);
+    dot.className = 'pin-dot' + (i < pinEntry.length ? ' filled' : '') + (state === 'error' ? ' error' : '');
+  }
+}
+
+function checkPin() {
+  if (pinEntry === ADMIN_PIN) {
+    fetchFromGoogleSheets('admin');
+
+  } else if (pinEntry === CARE_PIN) {
+    fetchFromGoogleSheets('caretaker');
+
+  } else {
+    pinEntry = '';
+    updatePinDots('error');
+    document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+    setTimeout(() => {
+      updatePinDots();
+      document.getElementById('pin-error').textContent = '';
+    }, 1000);
+  }
+}
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  if (document.getElementById('pin-screen').style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') pinKey(e.key);
+  if (e.key === 'Backspace') pinDel();
+});
+
+// ── AUTO FETCH FROM GITHUB ──
+const DATA_URL = 'https://raw.githubusercontent.com/12apijuan/booking-manager/main/data.json';
+
+async function fetchFromGoogleSheets(mode) {
+  document.getElementById('pin-screen').style.display = 'flex';
+  document.getElementById('pin-error').textContent = '⏳ Loading...';
+  document.getElementById('pin-error').style.color = '#2A9D8F';
+
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const payload = await res.json();
+
+    allRows = (payload.allRows || []).map(r => ({
+      ...r,
+      date:         r.date         ? parseDatePH(r.date)         : null,
+      checkInDate:  r.checkInDate  ? parseDatePH(r.checkInDate)  : null,
+      checkOutDate: r.checkOutDate ? parseDatePH(r.checkOutDate) : null,
+    }));
+    window._summaryData = payload.summaryData || {};
+    window._fileDate    = payload.fileDate || '';
+    loadedFileName      = payload.fileName || 'data.json';
+
+    document.getElementById('pin-screen').style.display = 'none';
+
+    if (mode === 'admin') {
+      document.getElementById('landing').style.display = 'flex';
+      document.getElementById('step-upload').style.display = 'none';
+      document.getElementById('step-role').style.display = 'block';
+    } else {
+      document.getElementById('landing').style.display = 'none';
+      enterMode('caretaker');
+    }
+
+  } catch(e) {
+    console.error('Fetch error:', e);
+    document.getElementById('pin-error').textContent = '⚠️ ' + e.message;
+    document.getElementById('pin-error').style.color = '#DC2626';
+    if (mode === 'admin') {
+      setTimeout(() => {
+        document.getElementById('pin-screen').style.display = 'none';
+        document.getElementById('landing').style.display = 'flex';
+        document.getElementById('step-upload').style.display = 'block';
+        document.getElementById('step-role').style.display = 'none';
+      }, 2000);
+    }
+  }
+}
+
+// ── EXPORT DATA JSON ──
+function exportDataJSON() {
+  if (!allRows || !allRows.length) {
+    alert('No data to export. Please upload your Excel first.');
+    return;
+  }
+  const payload = {
+    allRows: allRows.map(r => ({
+      ...r,
+      date:         r.date         ? r.date.toISOString()         : null,
+      checkInDate:  r.checkInDate  ? r.checkInDate.toISOString()  : null,
+      checkOutDate: r.checkOutDate ? r.checkOutDate.toISOString() : null,
+    })),
+    summaryData: window._summaryData || {},
+    fileDate: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+' '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}),
+    fileName: loadedFileName,
+  };
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Dark mode
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('dark-btn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('bm_dark', isDark ? '1' : '0');
+}
+// Restore preference
+(function(){
+  if(localStorage.getItem('bm_dark')==='1'){
+    document.body.classList.add('dark');
+  }
+})();
+
+let simDate = null;
+function tod0(){
+  if(simDate) return new Date(simDate);
+  // Always use Philippine Time (UTC+8)
+  const now = new Date();
+  const phOffset = 8 * 60;
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const phTime = new Date(utc + phOffset * 60000);
+  phTime.setHours(0,0,0,0);
+  return phTime;
+}
+
+// Parse ISO date string as Philippine Time (UTC+8) regardless of local timezone
+function parseDatePH(iso) {
+  if (!iso) return null;
+  // Extract YYYY-MM-DD from ISO string and create date in PH time
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  return null;
+}
+function toggleSim(){
+  const bar=document.getElementById('sim-bar');
+  const showing=bar.style.display!=='none';
+  bar.style.display=showing?'none':'flex';
+  if(!showing){
+    // default sim date to tomorrow
+    const tom=new Date(); tom.setDate(tom.getDate()+1);
+    const iso=tom.toISOString().split('T')[0];
+    document.getElementById('sim-date-input').value=iso;
+    setSimDate(iso);
+  } else {
+    resetSimDate();
+  }
+}
+function setSimDate(val){
+  if(!val){resetSimDate();return;}
+  const parts=val.split('-');
+  const d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  d.setHours(0,0,0,0);
+  simDate=d;
+  document.getElementById('sim-badge').textContent=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  renderPage(currentPage);
+}
+function resetSimDate(){
+  simDate=null;
+  document.getElementById('sim-bar').style.display='none';
+  document.getElementById('sim-badge').textContent='';
+  renderPage(currentPage);
+}
+function statsHTML(items){return items.map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.color||''}" style="font-weight:inherit">${s.value}</div>${s.detail?`<div class="stat-detail">${s.detail}</div>`:''}</div>`).join('');}
+function emptyCard(msg){return `<div class="empty-state"><h3>No bookings</h3><p>${msg}</p></div>`;}
+
+function bookingCard(r,type){
+  const avClass=type==='checkin'?'av-checkin':type==='checkout'?'av-checkout':type==='staying'?'av-staying':'av-upcoming';
+  const tagLabel=type==='checkin'?'Check-in':type==='checkout'?'Check-out':'';
+  const nights=r.bookedNights?r.bookedNights+' night'+(r.bookedNights!==1?'s':''):'';
+  const guests=r.numGuests?fmtGuests(r.numGuests):'';
+  const dateRange=r.checkInDate&&r.checkOutDate?'<br><span style="color:var(--muted);font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';
+  const meta=[nights,guests].filter(Boolean).join(' · ');
+  const amtHTML='';
+  const pinHTML=r.pinCode?`<div class="booking-sub" style="background:var(--deep);color:var(--amber);font-family:'DM Serif Display',serif;font-size:16px;letter-spacing:0.15em;padding:5px 14px;border-radius:7px;margin-top:4px;display:inline-block">${r.pinCode}</div>`:'';
+  const commentHTML='';
+  return `<div class="booking-card ${type}">
+    <div class="booking-avatar ${avClass}">${r.pinCode||initials(r.guestName)}</div>
+    <div>
+      <div class="booking-name">${r.guestName}${tagLabel?`<span class="status-tag ${type}">${tagLabel}</span>`:''}</div>
+      ${meta?`<div class="booking-meta">${meta}${dateRange}</div>`:dateRange?`<div class="booking-meta">${dateRange}</div>`:''}${commentHTML}
+    </div>
+    <div class="booking-right">${amtHTML}</div>
+  </div>`;
+}
+
+
+function uniqueBy(rows,key,filterFn){
+  const seen=new Set();
+  return rows.filter(r=>{ if(filterFn&&!filterFn(r)) return false; if(seen.has(r[key])) return false; seen.add(r[key]); return true; });
+}
+
+// ── CALENDAR ──
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function calPrev(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderPage('calendar'); }
+function calNext(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderPage('calendar'); }
+
+function renderCalendar(){
+  const today = tod0();
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay  = new Date(calYear, calMonth+1, 0);
+  const label = firstDay.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  document.getElementById('cal-month-label').textContent = label;
+  document.getElementById('cal-sub').textContent = '';
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = days.map(d=>`<div class="cal-header">${d}</div>`).join('');
+
+  // Start from Monday
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // convert to Mon=0
+
+  // Previous month fill
+  for(let i=0;i<startDow;i++){
+    const d = new Date(calYear, calMonth, -startDow+i+1);
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${d.getDate()}</div></div>`;
+  }
+
+  // Current month days
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date = new Date(calYear, calMonth, d);
+    const isToday = sameDay(date, today);
+    const dayRows = allRows.filter(r=>r.date&&sameDay(r.date,date));
+    // Checkouts: guest whose checkOutDate = this day (use base name to catch merged stays)
+    const checkoutNames = new Set();
+    allRows.filter(r=>r.checkOutDate&&sameDay(r.checkOutDate,date)&&r.guestName)
+      .forEach(r=>checkoutNames.add(r.guestName.split(' - ')[0].split(',')[0].trim().toLowerCase()));
+
+    const baseName = n => n.split(' - ')[0].split(',')[0].trim().toLowerCase();
+
+    // Checkins: isCheckIn on this day, not checking out same day
+    const checkinNames = new Set();
+    dayRows.filter(r=>r.isCheckIn&&r.guestName&&!checkoutNames.has(baseName(r.guestName)))
+      .forEach(r=>checkinNames.add(baseName(r.guestName)));
+
+    // Staying: on this day, not checkin, not checkout, checkout strictly after this day
+    const stayingNames = new Set();
+    dayRows.filter(r=>!r.isCheckIn&&r.guestName&&r.checkOutDate&&r.checkOutDate>date
+      &&!checkoutNames.has(baseName(r.guestName))&&!checkinNames.has(baseName(r.guestName)))
+      .forEach(r=>stayingNames.add(baseName(r.guestName)));
+
+    // Map base names back to display names
+    const displayName = n => {
+      const r = allRows.find(r=>r.guestName&&baseName(r.guestName)===n);
+      return r ? r.guestName.split(' - ')[0].trim() : n;
+    };
+
+
+    const cards = [];
+    checkoutNames.forEach(n => cards.push({type:'checkout', name:displayName(n)}));
+    checkinNames.forEach(n  => cards.push({type:'checkin',  name:displayName(n)}));
+    stayingNames.forEach(n  => cards.push({type:'staying',  name:displayName(n)}));
+
+    const bookingHtml = cards.slice(0,3).map(c=>
+      `<div class="cal-booking ${c.type}" title="${c.name}">${c.name.split(' ')[0]}</div>`
+    ).join('') + (cards.length>3?`<div style="font-size:10px;color:var(--muted)">+${cards.length-3} more</div>`:'');
+
+    html += `<div class="cal-day${isToday?' today-cell':''}">
+      <div class="cal-day-num">${d}</div>
+      ${bookingHtml}
+    </div>`;
+  }
+
+  // Next month fill
+  const endDow = lastDay.getDay();
+  const remaining = endDow === 0 ? 0 : 7 - endDow;
+  for(let i=1;i<=remaining;i++){
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = `<div class="cal-grid">${html}</div>`;
+}
+
+// ── RENDER ──
+function renderPage(id){
+  const today=tod0();
+
+  if(id==='today'){
+    document.getElementById('today-sub').textContent=today.toLocaleDateString('en-AU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const rows=allRows.filter(r=>sameDay(r.date,today));
+    const checkins=uniqueBy(rows,'guestName',r=>r.isCheckIn&&r.guestName&&r.guestName.trim()!=='');
+    const checkouts=uniqueBy(allRows,'guestName',r=>r.checkOutDate&&sameDay(r.checkOutDate,today));
+    const staying=uniqueBy(rows,'guestName',r=>!r.isCheckIn&&r.guestName&&r.guestName.trim()!==''&&r.checkOutDate&&r.checkOutDate>today);
+    const isChangingDay = checkins.length>0 || checkouts.length>0;
+    const isStayingDay  = !isChangingDay && staying.length>0;
+
+
+    const hasActivity = checkins.length>0 || checkouts.length>0;
+    document.getElementById('today-checkins').innerHTML = !hasActivity ? '' :
+      '<div class="section-label" style="margin-top:0">Outgoing</div>' +
+      (checkouts.length ? checkouts.map(r=>bookingCard(r,'checkout')).join('') : (()=>{
+        const endingToday = allRows.filter(r=>r.checkOutDate&&sameDay(r.checkOutDate,today));
+        const pin = (()=>{
+          // Find departing guest: checked out today OR most recently before today
+          const dept = endingToday.length ? endingToday[0]
+            : allRows.filter(r=>r.pinCode&&r.checkOutDate&&r.checkOutDate<today)
+                     .sort((a,b)=>b.checkOutDate-a.checkOutDate)[0];
+          if (!dept) return '';
+          // Find the check-in row for this stay (has the PIN)
+          const byCheckIn = allRows.find(r=>r.checkInDate&&dept.checkInDate&&
+            r.checkInDate.toDateString()===dept.checkInDate.toDateString()&&r.pinCode);
+          if (byCheckIn) return byCheckIn.pinCode;
+          const baseName = dept.guestName.split(' - ')[0].trim().toLowerCase();
+          const byName = allRows.find(r=>r.pinCode&&
+            r.guestName.split(' - ')[0].trim().toLowerCase()===baseName);
+          return byName ? byName.pinCode : '';
+        })();
+        return '<div class=\'booking-card checkout\' style=\'\'>'+'<div class=\'booking-avatar av-checkout\'>'+(pin||'—')+'</div>'+'<div><div class=\'booking-name\'>None</div>'+(pin?'<div class=\'booking-meta\' style=\'margin-top:4px;font-size:12px;color:var(--muted)\'>Reset Key Code</div>':'')+'</div><div class=\'booking-right\'></div></div>';
+      })()) +
+      '<div class="section-label" style="margin-top:1rem">Incoming</div>' +
+      (checkins.length?checkins.map(r=>{const ms=r.checkOutDate?r.checkOutDate.getTime()-today.getTime():0;const d=Math.round(ms/(1000*60*60*24));const nightsTom=d>0?d+' night'+(d!==1?'s':''):'';const g=r.numGuests?fmtGuests(r.numGuests):'';const dr=r.checkInDate&&r.checkOutDate?'<br><span style="color:var(--muted);font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';const meta=[nightsTom,g].filter(Boolean).join(' · ')+dr;const amt='';return '<div class="booking-card checkin"><div class="booking-avatar av-checkin">'+(r.pinCode||initials(r.guestName))+'</div><div><div class="booking-name">'+r.guestName+'<span class="status-tag checkin">Check-in</span></div>'+(meta?'<div class="booking-meta">'+meta+'</div>':'')+'</div><div class="booking-right">'+amt+'</div></div>';}).join(''):'<div class=\'booking-card checkin\' style=\'\'>' +
+        '<div class=\'booking-avatar av-checkin\'>—</div>' +
+        '<div><div class=\'booking-name\'>None</div></div>' +
+        '<div class=\'booking-right\'></div>' +
+        '</div>');
+    document.getElementById('today-staying-section').style.display=(staying.length&&!hasActivity)?'block':'none';
+    const todayHasAnything = hasActivity || (staying.length && !hasActivity);
+    document.getElementById('today-no-booking').style.display = todayHasAnything ? 'none' : 'block';
+    document.getElementById('today-staying').innerHTML=staying.map(r=>{
+      const ms=r.checkOutDate?r.checkOutDate.getTime()-tod0().getTime():0;
+      const daysLeft=Math.round(ms/(1000*60*60*24));
+      const nightsText=daysLeft>0?daysLeft+' more night'+(daysLeft!==1?'s':''):daysLeft===0?'Checking out today':'';
+      const guests=r.numGuests?fmtGuests(r.numGuests):'';
+      const dateRange=r.checkInDate&&r.checkOutDate?'<br><span style="font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';
+      const meta=[nightsText,guests].filter(Boolean).join(' · ')+dateRange;
+      const amtHTML='';
+      return `<div class="booking-card staying">
+        <div class="booking-avatar av-staying">${r.pinCode||initials(r.guestName)}</div>
+        <div>
+          <div class="booking-name">${r.guestName}</div>
+          ${meta?'<div class="booking-meta">'+meta+'</div>':''}
+        </div>
+        <div class="booking-right">${amtHTML}</div>
+      </div>`;
+    }).join('');
+  }
+
+  if(id==='tomorrow'){
+    const tom=new Date(today);tom.setDate(today.getDate()+1);
+    document.getElementById('tomorrow-sub').textContent=tom.toLocaleDateString('en-AU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const rows=allRows.filter(r=>sameDay(r.date,tom));
+    const checkins=uniqueBy(rows,'guestName',r=>r.isCheckIn&&r.guestName&&r.guestName.trim()!=='');
+    const checkouts=uniqueBy(allRows,'guestName',r=>r.checkOutDate&&sameDay(r.checkOutDate,tom));
+    const staying=uniqueBy(rows,'guestName',r=>!r.isCheckIn&&r.guestName&&r.guestName.trim()!==''&&r.checkOutDate&&r.checkOutDate>tom);
+    const isChangingDay=checkins.length>0||checkouts.length>0;
+
+
+    const hasActivityTom = checkins.length>0 || checkouts.length>0;
+    document.getElementById('tomorrow-checkins').innerHTML = !hasActivityTom ? '' :
+      '<div class="section-label" style="margin-top:0">Outgoing</div>' +
+      (checkouts.length ? checkouts.map(r=>bookingCard(r,'checkout')).join('') : (()=>{
+        const endingTom = allRows.filter(r=>r.checkOutDate&&sameDay(r.checkOutDate,tom));
+        const pin = (()=>{
+          const dept = endingTom.length ? endingTom[0]
+            : allRows.filter(r=>r.pinCode&&r.checkOutDate&&r.checkOutDate<tom)
+                     .sort((a,b)=>b.checkOutDate-a.checkOutDate)[0];
+          if (!dept) return '';
+          const byCheckIn = allRows.find(r=>r.checkInDate&&dept.checkInDate&&
+            r.checkInDate.toDateString()===dept.checkInDate.toDateString()&&r.pinCode);
+          if (byCheckIn) return byCheckIn.pinCode;
+          const baseName = dept.guestName.split(' - ')[0].trim().toLowerCase();
+          const byName = allRows.find(r=>r.pinCode&&
+            r.guestName.split(' - ')[0].trim().toLowerCase()===baseName);
+          return byName ? byName.pinCode : '';
+        })();
+        return '<div class=\'booking-card checkout\' style=\'\'>'+'<div class=\'booking-avatar av-checkout\'>'+(pin||'—')+'</div>'+'<div><div class=\'booking-name\'>None</div>'+(pin?'<div class=\'booking-meta\' style=\'margin-top:4px;font-size:12px;color:var(--muted)\'>Reset Key Code</div>':'')+'</div><div class=\'booking-right\'></div></div>';
+      })()) +
+      '<div class="section-label" style="margin-top:1rem">Incoming</div>' +
+      (checkins.length?checkins.map(r=>{const ms=r.checkOutDate?r.checkOutDate.getTime()-tom.getTime():0;const d=Math.round(ms/(1000*60*60*24));const nightsTom=d>0?d+' night'+(d!==1?'s':''):'';const g=r.numGuests?fmtGuests(r.numGuests):'';const dr=r.checkInDate&&r.checkOutDate?'<br><span style="color:var(--muted);font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';const meta=[nightsTom,g].filter(Boolean).join(' · ')+dr;const amt='';return '<div class="booking-card checkin"><div class="booking-avatar av-checkin">'+(r.pinCode||initials(r.guestName))+'</div><div><div class="booking-name">'+r.guestName+'<span class="status-tag checkin">Check-in</span></div>'+(meta?'<div class="booking-meta">'+meta+'</div>':'')+'</div><div class="booking-right">'+amt+'</div></div>';}).join(''):'<div class=\'booking-card checkin\' style=\'\'>' +
+        '<div class=\'booking-avatar av-checkin\'>—</div>' +
+        '<div><div class=\'booking-name\'>None</div></div>' +
+        '<div class=\'booking-right\'></div>' +
+        '</div>');
+    document.getElementById('tomorrow-staying-section').style.display=(staying.length&&!hasActivityTom)?'block':'none';
+    const tomHasAnything = hasActivityTom || (staying.length && !hasActivityTom);
+    document.getElementById('tomorrow-no-booking').style.display = tomHasAnything ? 'none' : 'block';
+    document.getElementById('tomorrow-staying').innerHTML=staying.map(r=>`
+      <div class="booking-card staying">
+        <div class="booking-avatar av-staying">${r.pinCode||initials(r.guestName)}</div>
+        <div>
+          <div class="booking-name">${r.guestName}</div>
+          <div class="booking-meta">${(()=>{
+            const ms=r.checkOutDate?r.checkOutDate.getTime()-tom.getTime():0;
+            const d=Math.round(ms/(1000*60*60*24));
+            const n=d>0?d+' more night'+(d!==1?'s':''):d===0?'Checking out today':'';
+            const g=fmtGuests(r.numGuests);
+            const dr=r.checkInDate&&r.checkOutDate?'<br><span style="font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';
+            return [n,g].filter(Boolean).join(' · ')+dr;
+          })()}</div>
+        </div>
+        <div class="booking-right"></div>
+      </div>`).join('');
+  }
+
+  if(id==='week'){
+    const wStart=new Date(today);
+    const wEnd=new Date(today);wEnd.setDate(today.getDate()+6);
+    document.getElementById('week-sub').textContent=`${fmt(wStart)} – ${fmt(wEnd)}`;
+    const rows=allRows.filter(r=>r.date>=wStart&&r.date<=wEnd);
+    const checkins=uniqueBy(rows,'guestName',r=>r.isCheckIn&&r.guestName&&r.guestName.trim()!=='');
+    // Get mid-stay guests (checked in before this week, checking out after wStart)
+    const midStay = uniqueBy(
+      allRows.filter(r => r.checkInDate && r.checkInDate < wStart && r.checkOutDate && r.checkOutDate > wStart),
+      'guestName', r => true
+    );
+
+    // Sort arrivals by date
+    const sortedCheckins = checkins.slice().sort((a,b)=>a.date-b.date);
+
+    // Group arrivals by date
+    const dayGroups = {};
+    sortedCheckins.forEach(r => {
+      const key = r.date.toDateString();
+      if (!dayGroups[key]) dayGroups[key] = [];
+      dayGroups[key].push(r);
+    });
+
+    let html = '';
+
+    // Show mid-stay guests at top if any
+    if (midStay.length) {
+      html += '<div class="section-label" style="margin-top:0">Currently Hosting</div>';
+      html += midStay.map(r => {
+        const ms = r.checkOutDate ? r.checkOutDate.getTime() - today.getTime() : 0;
+        const d = Math.round(ms/(1000*60*60*24));
+        const nights = d > 0 ? d + ' more night' + (d!==1?'s':'') : 'Checking out today';
+        const guests = fmtGuests(r.numGuests);
+        const dr = r.checkInDate&&r.checkOutDate?'<br><span style="font-size:12px">'+fmt(r.checkInDate)+' – '+fmt(r.checkOutDate)+'</span>':'';
+        const meta = [nights, guests].filter(Boolean).join(' · ')+dr;
+        const amt = '';
+        return '<div class="booking-card staying"><div class="booking-avatar av-staying">'+(r.pinCode||initials(r.guestName))+'</div><div><div class="booking-name">'+r.guestName+'</div><div class="booking-meta">'+meta+'</div></div><div class="booking-right">'+amt+'</div></div>';
+      }).join('');
+    }
+
+    // Show arrivals grouped by day
+    if (sortedCheckins.length) {
+      html += Object.entries(dayGroups).map(([dateStr, guests]) => {
+        const d = new Date(dateStr);
+        const isPast = d < today;
+        const isToday = sameDay(d, today);
+        const isTom2 = sameDay(d, new Date(tod0().getTime()+86400000));
+        const label = isToday ? 'Currently Hosting' : isTom2 ? 'Tomorrow' : fmt(d) + ' · ' + d.toLocaleDateString('en-AU',{weekday:'long'});
+        return '<div class="section-label" style="margin-top:1.25rem;color:'+(isPast?'var(--muted)':'var(--deep)')+'">'+label+'</div>'
+          + guests.map(r => bookingCard(r, isToday?'checkin':'upcoming')).join('');
+      }).join('');
+    }
+
+    document.getElementById('week-list').innerHTML = html || emptyCard('No arrivals or stays this week');
+  }
+
+  if(id==='month'){
+    const mStart=new Date(today);
+    const mEnd=new Date(today);mEnd.setDate(today.getDate()+29);
+    document.getElementById('month-sub').textContent=fmt(mStart)+' – '+fmt(mEnd);
+    const rows=allRows.filter(r=>r.date>=mStart&&r.date<=mEnd);
+    const checkins=rows.filter(r=>r.isCheckIn);
+    const isAdmin=role==='admin';
+    // Group check-ins by arrival date
+    const mCheckins = rows.filter(r=>r.isCheckIn&&r.guestName&&r.guestName.trim()!=='');
+    const mMidStay = uniqueBy(
+      allRows.filter(r=>r.checkInDate&&r.checkInDate<mStart&&r.checkOutDate&&r.checkOutDate>mStart),
+      'guestName', r=>true
+    );
+
+    const sortedMCheckins = mCheckins.slice().sort((a,b)=>a.date-b.date);
+    const mDayGroups = {};
+    sortedMCheckins.forEach(r => {
+      const key = r.date.toDateString();
+      if (!mDayGroups[key]) mDayGroups[key] = [];
+      mDayGroups[key].push(r);
+    });
+
+    let mHtml = '';
+
+    if (mMidStay.length) {
+      mHtml += '<div class="section-label" style="margin-top:0">Currently Hosting</div>';
+      mHtml += mMidStay.map(r => bookingCard(r,'staying')).join('');
+    }
+
+    if (sortedMCheckins.length) {
+      mHtml += Object.entries(mDayGroups).map(([dateStr, guests]) => {
+        const d = guests[0].date; // use actual date object to avoid timezone issues
+        const isToday = sameDay(d, today);
+        const tom = new Date(today); tom.setDate(today.getDate()+1);
+        const isTom = sameDay(d, tom);
+        const isPast = d < today;
+        const label = isToday ? 'Currently Hosting' : isTom ? 'Tomorrow' : fmt(d) + ' · ' + d.toLocaleDateString('en-AU',{weekday:'long'});
+        return '<div class="section-label" style="margin-top:1.25rem;color:'+(isPast?'var(--muted)':'var(--deep)')+'">'+label+'</div>'
+          + guests.map(r => bookingCard(r, isToday?'checkin':'upcoming')).join('');
+      }).join('');
+    }
+
+    document.getElementById('month-list').innerHTML = mHtml || emptyCard('No bookings in the next 30 days');
+  }
+
+  if(id==='calendar'){ renderCalendar(); return; }
+
+  if(id==='summary'){
+        // Horizontal bar chart
+    const sd4 = window._summaryData || {};
+    const MNS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const allGross = MNS.map(m=>(sd4.monthlyGross?sd4.monthlyGross[m]:0)||0);
+    const maxVal = Math.max(...allGross, 1);
+    const fmtShort = n => n>=1000?'₱'+(n/1000).toFixed(1)+'k':n?fmtP(n):'—';
+
+    const legend = `<div class="hbar-legend">
+      <div class="hbar-legend-item"><div class="hbar-legend-dot" style="background:#2563EB"></div>Gross Earnings</div>
+      <div class="hbar-legend-item"><div class="hbar-legend-dot" style="background:#DC2626"></div>Total Expenses</div>
+      <div class="hbar-legend-item"><div class="hbar-legend-dot" style="background:var(--teal)"></div>Net</div>
+    </div>`;
+
+    // Order: current month, backwards to Jan, then forward from next month to Dec
+    const todayM = tod0().getMonth(); // 0=Jan
+    const orderedMNS = [];
+    for(let i=todayM; i>=0; i--) orderedMNS.push(MNS[i]);       // current down to Jan
+    for(let i=todayM+1; i<12; i++) orderedMNS.push(MNS[i]);     // next month to Dec
+
+    const cards = orderedMNS.map(m => {
+      const gross = (sd4.monthlyGross    ?sd4.monthlyGross[m]    :0)||0;
+      const exp   = (sd4.monthlyExpenses ?sd4.monthlyExpenses[m] :0)||0;
+      const net   = (sd4.monthlyNet      ?sd4.monthlyNet[m]      :0)||0;
+      const occ   = (sd4.monthlyOccupancy ?sd4.monthlyOccupancy[m]:0)||0;
+      if (!gross && !exp && !net) return '';
+      const gW = Math.round((gross/maxVal)*100);
+      const eW = Math.round((exp/maxVal)*100);
+      const nW = Math.round((Math.abs(net)/maxVal)*100);
+      const netColor = net >= 0 ? 'var(--teal)' : '#DC2626';
+      return `<div class="hbar-wrap" style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.08em">${m}</div>
+          ${occ?`<div style="font-size:13px;font-weight:700;color:var(--muted)">${occ.toFixed(2)}% occupancy</div>`:''}
+        </div>
+        <div class="hbar-bars">
+          <div class="hbar-bar-row">
+            <div style="width:70px;font-size:13px;color:${netColor};font-weight:600">Net</div>
+            <div class="hbar-bar-track" style="flex:1"><div class="hbar-bar-fill" style="width:${nW}%;background:${netColor}"></div></div>
+            <span class="hbar-val" style="color:${netColor};font-weight:600">${fmtP(net)}</span>
+          </div>
+          <div class="hbar-bar-row" style="margin-top:6px">
+            <div style="width:70px;font-size:13px;color:#DC2626;font-weight:600">Expenses</div>
+            <div class="hbar-bar-track" style="flex:1"><div class="hbar-bar-fill" style="width:${eW}%;background:#DC2626;opacity:0.85"></div></div>
+            <span class="hbar-val" style="color:#DC2626">${fmtP(exp)}</span>
+          </div>
+          <div class="hbar-bar-row" style="margin-top:6px">
+            <div style="width:70px;font-size:13px;color:#94A3B8;font-weight:600">Gross</div>
+            <div class="hbar-bar-track" style="flex:1"><div class="hbar-bar-fill" style="width:${gW}%;background:#94A3B8;opacity:0.85"></div></div>
+            <span class="hbar-val" style="color:#94A3B8">${fmtP(gross)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    document.getElementById('hbar-chart').innerHTML = cards || '';
+    const checkins=allRows.filter(r=>r.isCheckIn);
+    const sd = window._summaryData || {};
+    document.getElementById('summary-stats').innerHTML=statsHTML([
+      ...(sd.currentMonthBalance ? [{label:'Current Balance', value:'<strong>'+fmtP(sd.currentMonthBalance)+'</strong>', color:'teal', detail:'Closing balance'}] : []),
+      ...(sd.currentMonthNet ? [{label:sd.currentMonth+' Net', value:'<strong>'+fmtP(sd.currentMonthNet)+'</strong>', color:'teal', detail:'Net this month'}] : []),
+      ...(sd.monthlyAvg ? [{label:'Monthly Avg', value:'<strong>'+fmtP(sd.monthlyAvg)+'</strong>', color:'teal', detail:'Average net'}] : []),
+      ...(sd.netEarnings ? [{label:'2026 Net Earnings', value:'<strong>'+fmtP(sd.netEarnings)+'</strong>', color:'teal'}] : []),
+    ]);
+
+
+  }
+
+
+}
+function initDrop() {
+  var zone = document.getElementById('upload-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+    document.getElementById('upload-title').textContent = 'Drop it!';
+  });
+  zone.addEventListener('dragleave', function(e) {
+    zone.classList.remove('drag-over');
+    document.getElementById('upload-title').textContent = 'Drag your Excel file here';
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    document.getElementById('upload-title').textContent = 'Drag your Excel file here';
+    var file = e.dataTransfer && e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
+window.addEventListener('load', initDrop);
+</script>
+</body>
+</html>
+
